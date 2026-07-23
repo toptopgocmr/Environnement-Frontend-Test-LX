@@ -1,0 +1,94 @@
+<!-- src/views/reader/CheckoutView.vue -->
+<template>
+  <AppLayout>
+    <div class="max-w-3xl mx-auto px-6 py-14">
+      <h1 class="text-2xl font-bold text-slate-800 mb-8">Finaliser l'achat</h1>
+      <div v-if="loading" class="text-center py-20"><div class="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div></div>
+      <div v-else-if="book" class="grid grid-cols-3 gap-6">
+        <!-- Summary -->
+        <div class="col-span-2 space-y-5">
+          <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+            <h3 class="font-bold text-slate-800 mb-4">Récapitulatif</h3>
+            <div class="flex gap-4">
+              <img :src="book.cover_url" class="w-20 h-28 object-cover rounded-xl shadow"/>
+              <div>
+                <h4 class="font-bold text-slate-800">{{ book.title }}</h4>
+                <p class="text-slate-400 text-sm">{{ book.author?.name }}</p>
+                <p class="text-blue-600 font-bold text-xl mt-2">{{ book.price_formatted }}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+            <h3 class="font-bold text-slate-800 mb-4">Méthode de paiement</h3>
+            <div class="space-y-3">
+              <label v-for="m in methods" :key="m.id" class="flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition"
+                :class="payment.method === m.id ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:border-blue-200'">
+                <input type="radio" :value="m.id" v-model="payment.method" class="accent-blue-600"/>
+                <span class="text-2xl">{{ m.icon }}</span>
+                <div>
+                  <p class="font-semibold text-slate-700">{{ m.label }}</p>
+                  <p class="text-xs text-slate-400">{{ m.sub }}</p>
+                </div>
+              </label>
+            </div>
+            <div v-if="['mtn_momo','airtel_money'].includes(payment.method)" class="mt-4">
+              <label class="text-sm font-semibold text-slate-600 mb-1.5 block">Numéro de téléphone</label>
+              <input v-model="payment.phone" type="tel" placeholder="+242 06 XXX XX XX"
+                class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+            </div>
+          </div>
+        </div>
+
+        <!-- Order total -->
+        <div>
+          <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 sticky top-24">
+            <h3 class="font-bold text-slate-800 mb-4">Votre commande</h3>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between text-slate-600"><span>Prix</span><span>{{ book.price_formatted }}</span></div>
+              <div class="flex justify-between text-slate-600"><span>Frais</span><span class="text-green-600">0 XAF</span></div>
+              <div class="border-t border-slate-100 pt-2 flex justify-between font-bold text-slate-800"><span>Total</span><span class="text-blue-600">{{ book.price_formatted }}</span></div>
+            </div>
+            <button @click="pay" :disabled="paying"
+              class="w-full mt-5 bg-blue-600 text-white py-3.5 rounded-xl font-bold text-sm hover:bg-blue-700 transition disabled:opacity-50">
+              {{ paying ? 'Traitement…' : `Payer ${book.price_formatted}` }}
+            </button>
+            <p class="text-center text-xs text-slate-400 mt-3">🔒 Paiement sécurisé</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </AppLayout>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import AppLayout from '@/components/layout/AppLayout.vue'
+import { bookService, orderService } from '@/services/api'
+
+const route = useRoute()
+const router = useRouter()
+const book = ref(null)
+const loading = ref(true)
+const paying = ref(false)
+const payment = ref({ method: 'mtn_momo', phone: '' })
+const methods = [
+  { id: 'mtn_momo', icon: '📱', label: 'MTN Mobile Money', sub: 'Paiement mobile instantané' },
+  { id: 'airtel_money', icon: '📲', label: 'Airtel Money', sub: 'Paiement mobile Airtel' },
+  { id: 'stripe', icon: '💳', label: 'Carte bancaire', sub: 'Visa, Mastercard' },
+]
+onMounted(async () => {
+  const { data } = await bookService.show(route.params.bookId)
+  book.value = data.data
+  loading.value = false
+})
+async function pay() {
+  paying.value = true
+  try {
+    await orderService.initiate({ book_id: book.value.id, payment_method: payment.value.method, phone: payment.value.phone })
+    router.push({ name: 'library' })
+  } catch(e) { alert(e.response?.data?.message || 'Erreur de paiement') }
+  finally { paying.value = false }
+}
+</script>
