@@ -442,7 +442,10 @@ function pollOrderStatus(orderId) {
       }
       if (status === 'failed') {
         stopPolling()
-        paymentOverlay.value = { visible: true, stage: 'failed', title: '', message: 'Le paiement a été refusé ou annulé.' }
+        paymentOverlay.value = {
+          visible: true, stage: 'failed', title: '',
+          message: data?.message || 'Le paiement a été refusé ou annulé.',
+        }
         paying.value = false
         return
       }
@@ -474,8 +477,13 @@ async function pay() {
   }
 
   try {
+    // Format E.164 exigé par Peex (ex: "+237675287689", sans le "0" de tronc
+    // local ni espaces/tirets). Sans ce nettoyage, un numéro saisi "067621919"
+    // devient "+242067621919" (invalide) : la demande n'atteint jamais
+    // vraiment le portefeuille du client, qui ne reçoit donc aucune
+    // notification, et Peex renvoie un échec quasi immédiat.
     const fullPhone = isMobileMoney.value
-      ? selectedCountry.value.dial + phoneLocal.value.replace(/\s/g, '')
+      ? selectedCountry.value.dial + phoneLocal.value.replace(/\D/g, '').replace(/^0+/, '')
       : ''
     const { data } = await orderService.initiate({
       book_id: book.value.id,
