@@ -55,6 +55,7 @@ export const orderService = {
   myOrders: (p={})    => api.get('/orders', { params: p }),
   downloadLink: (id)  => api.post(`/orders/${id}/download-link`),
   peexCountries: ()   => api.get('/payments/peex-countries'),
+  checkStatus: (id)   => api.get(`/orders/${id}/status`),
 }
 
 export const physicalOrderService = {

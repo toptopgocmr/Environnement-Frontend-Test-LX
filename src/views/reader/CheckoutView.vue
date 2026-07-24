@@ -146,6 +146,31 @@
         </div>
       </div>
     </div>
+
+    <!-- Overlay de suivi du paiement -->
+    <div v-if="paymentOverlay.visible" class="fixed inset-0 bg-[#16191f]/60 z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-lg shadow-xl max-w-sm w-full p-6 text-center">
+        <template v-if="paymentOverlay.stage === 'success'">
+          <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-[#eafaf1] flex items-center justify-center text-3xl">✅</div>
+          <h3 class="font-bold text-[#1d8102] mb-1">Paiement confirmé !</h3>
+          <p class="text-sm text-[#545b64]">Redirection vers votre bibliothèque…</p>
+        </template>
+        <template v-else-if="paymentOverlay.stage === 'failed'">
+          <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-[#fdf3f1] flex items-center justify-center text-3xl">❌</div>
+          <h3 class="font-bold text-[#d13212] mb-1">Paiement non confirmé</h3>
+          <p class="text-sm text-[#545b64] mb-5">{{ paymentOverlay.message }}</p>
+          <button @click="closeOverlay"
+            class="px-5 py-2 rounded bg-[#0073bb] hover:bg-[#005276] text-white text-sm font-semibold transition">
+            Voir mes commandes
+          </button>
+        </template>
+        <template v-else>
+          <div class="w-14 h-14 mx-auto mb-4 border-4 border-[#0073bb]/20 border-t-[#0073bb] rounded-full animate-spin"></div>
+          <h3 class="font-bold text-[#16191f] mb-1">{{ paymentOverlay.title }}</h3>
+          <p class="text-sm text-[#545b64]">{{ paymentOverlay.message }}</p>
+        </template>
+      </div>
+    </div>
   </AppLayout>
 </template>
 <script setup>
@@ -388,8 +413,66 @@ onMounted(async () => {
   payment.value.method = defaultMethodFor(selectedCountry.value)
 })
 
+// État de l'écran de suivi affiché après le clic sur "Payer".
+const paymentOverlay = ref({ visible: false, stage: 'checking', title: '', message: '' })
+let pollTimer = null
+let pollAttempts = 0
+const POLL_INTERVAL_MS = 3000
+const POLL_MAX_ATTEMPTS = 40 // ~2 minutes
+
+function stopPolling() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null }
+}
+onUnmounted(() => stopPolling())
+
+function pollOrderStatus(orderId) {
+  stopPolling()
+  pollAttempts = 0
+  pollTimer = setInterval(async () => {
+    pollAttempts++
+    try {
+      const { data } = await orderService.checkStatus(orderId)
+      const status = data?.status
+
+      if (status === 'paid') {
+        stopPolling()
+        paymentOverlay.value = { visible: true, stage: 'success', title: '', message: '' }
+        setTimeout(() => router.push({ name: 'library' }), 1500)
+        return
+      }
+      if (status === 'failed') {
+        stopPolling()
+        paymentOverlay.value = { visible: true, stage: 'failed', title: '', message: 'Le paiement a été refusé ou annulé.' }
+        paying.value = false
+        return
+      }
+    } catch (e) {
+      // erreur transitoire réseau : on continue de tenter jusqu'au délai maximum
+    }
+
+    if (pollAttempts >= POLL_MAX_ATTEMPTS) {
+      stopPolling()
+      paymentOverlay.value = {
+        visible: true, stage: 'failed', title: '',
+        message: "La confirmation prend plus de temps que prévu. Suivez le statut dans « Mes commandes ».",
+      }
+      paying.value = false
+    }
+  }, POLL_INTERVAL_MS)
+}
+
+function closeOverlay() {
+  paymentOverlay.value.visible = false
+  router.push({ name: 'orders' })
+}
+
 async function pay() {
   paying.value = true
+  paymentOverlay.value = {
+    visible: true, stage: 'checking', title: 'Vérification en cours…',
+    message: 'Vérification de votre compte et de votre solde…',
+  }
+
   try {
     const fullPhone = isMobileMoney.value
       ? selectedCountry.value.dial + phoneLocal.value.replace(/\s/g, '')
@@ -403,18 +486,27 @@ async function pay() {
 
     if (paymentMethodToSend.value === 'peex') {
       // Mobile money : la demande est envoyée, le paiement doit encore être
-      // confirmé par le client sur son téléphone (webhook Peex). On ne le
-      // redirige donc pas vers la bibliothèque tout de suite.
-      alert(data.data?.message || 'Demande envoyée. Validez le paiement sur votre téléphone.')
-      router.push({ name: 'orders' })
+      // confirmé par le client sur son téléphone (webhook Peex + polling ici).
+      const orderId = data.data?.order_id
+      paymentOverlay.value = {
+        visible: true, stage: 'checking', title: 'Demande envoyée',
+        message: 'Validez le paiement sur votre téléphone. En attente de confirmation…',
+      }
+      if (orderId) {
+        pollOrderStatus(orderId)
+      } else {
+        paying.value = false
+        paymentOverlay.value.visible = false
+        router.push({ name: 'orders' })
+      }
     } else {
       // Livre gratuit : commande déjà marquée payée côté backend.
-      router.push({ name: 'library' })
+      paymentOverlay.value = { visible: true, stage: 'success', title: '', message: '' }
+      setTimeout(() => router.push({ name: 'library' }), 800)
     }
   } catch (e) {
     const msg = e.response?.data?.data?.message || e.response?.data?.message || 'Erreur de paiement'
-    alert(msg)
-  } finally {
+    paymentOverlay.value = { visible: true, stage: 'failed', title: '', message: msg }
     paying.value = false
   }
 }
