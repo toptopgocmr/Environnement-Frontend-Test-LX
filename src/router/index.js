@@ -45,4 +45,26 @@ router.beforeEach((to, from, next) => {
   next()
 })
 
+// Une fois une navigation résolue avec succès, on autorise un futur
+// rechargement automatique (voir main.js) si un nouveau déploiement invalide
+// à nouveau les chunks — sinon le garde-fou anti-boucle resterait posé
+// pour le reste de la session.
+router.afterEach(() => {
+  sessionStorage.removeItem('lirex_reloaded_stale_chunk')
+})
+
+// Filet de sécurité : certains échecs de chunk lazy (selon navigateur/build)
+// remontent comme erreur de navigation plutôt que via l'évènement Vite
+// 'vite:preloadError' déjà géré dans main.js. Même traitement : reload une
+// seule fois pour repartir sur les bons fichiers après un redéploiement.
+router.onError((error, to) => {
+  const msg = String(error?.message || '')
+  const isChunkError = /Failed to fetch dynamically imported module|error loading dynamically imported module|Importing a module script failed/i.test(msg)
+  if (!isChunkError) return
+
+  if (sessionStorage.getItem('lirex_reloaded_stale_chunk')) return
+  sessionStorage.setItem('lirex_reloaded_stale_chunk', '1')
+  window.location.href = to?.fullPath || window.location.href
+})
+
 export default router

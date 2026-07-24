@@ -96,10 +96,16 @@
                     class="text-xs bg-[#0073bb] hover:bg-[#005276] text-white px-3 py-1.5 rounded font-semibold transition text-center">
                     📖 Lire
                   </router-link>
-                  <router-link v-if="order.type === 'print'"
+                  <router-link v-if="order.payment_status === 'paid' && order.type === 'print'"
                     :to="`/tracking/${order.id}`"
                     class="text-xs bg-[#f2f3f3] hover:bg-[#e8f5fd] border border-[#d5dbdb] hover:border-[#0073bb] text-[#0073bb] px-3 py-1.5 rounded font-semibold transition text-center">
                     📍 Suivi
+                  </router-link>
+                  <router-link
+                    v-if="(order.payment_status === 'pending' || order.payment_status === 'failed') && order.book"
+                    :to="retryLink(order)"
+                    class="text-xs bg-[#ff9900] hover:bg-[#e88900] text-[#232f3e] px-3 py-1.5 rounded font-semibold transition text-center whitespace-nowrap">
+                    🔄 Refaire le paiement
                   </router-link>
                 </div>
               </div>
@@ -136,8 +142,11 @@ function statusClass(status) {
   return map[status] ?? 'bg-[#f2f3f3] text-[#545b64] border border-[#d5dbdb]'
 }
 function statusLabel(status) {
-  const map = { paid: '✓ Payé', pending: '⏳ En attente', failed: '✗ Échoué' }
+  const map = { paid: '✓ Payé', pending: '⏳ Paiement non effectué', failed: '✗ Paiement échoué' }
   return map[status] ?? status
+}
+function retryLink(order) {
+  return order.type === 'print' ? `/physical/${order.book.id}` : `/checkout/${order.book.id}`
 }
 function formatAmount(order) {
   if (!order.amount) return 'Gratuit'
