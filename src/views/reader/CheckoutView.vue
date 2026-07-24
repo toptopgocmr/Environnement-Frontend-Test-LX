@@ -157,134 +157,40 @@ const payment = ref({ method: '' })
 const showCountryDropdown = ref(false)
 const countrySearch = ref('')
 
-// Logos SVG opérateurs
+// Logos SVG
 const logos = {
-  mtn: `<svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="20" fill="#FFCC00"/><text x="20" y="25" text-anchor="middle" font-family="Arial Black,Arial" font-weight="900" font-size="10" fill="#000">mtn</text></svg>`,
-  airtel: `<svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="20" fill="#E40000"/><text x="20" y="24" text-anchor="middle" font-family="Arial,sans-serif" font-weight="700" font-size="8" fill="#fff">airtel</text></svg>`,
-  orange: `<svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="20" fill="#FF6600"/><text x="20" y="24" text-anchor="middle" font-family="Arial,sans-serif" font-weight="700" font-size="7.5" fill="#fff">orange</text></svg>`,
-  mpesa: `<svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="20" fill="#00A651"/><text x="20" y="22" text-anchor="middle" font-family="Arial,sans-serif" font-weight="700" font-size="6.5" fill="#fff">M-PESA</text></svg>`,
-  wave: `<svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="20" fill="#1EAAF1"/><text x="20" y="24" text-anchor="middle" font-family="Arial,sans-serif" font-weight="700" font-size="8" fill="#fff">wave</text></svg>`,
-  moov: `<svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="20" fill="#0055A5"/><text x="20" y="24" text-anchor="middle" font-family="Arial,sans-serif" font-weight="700" font-size="8" fill="#fff">moov</text></svg>`,
-  free: `<svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="20" fill="#CD1227"/><text x="20" y="24" text-anchor="middle" font-family="Arial,sans-serif" font-weight="700" font-size="9" fill="#fff">free</text></svg>`,
-  vodacom: `<svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="20" fill="#E60000"/><text x="20" y="23" text-anchor="middle" font-family="Arial,sans-serif" font-weight="700" font-size="5.5" fill="#fff">VODACOM</text></svg>`,
-  tmoney: `<svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="20" fill="#009F6B"/><text x="20" y="23" text-anchor="middle" font-family="Arial,sans-serif" font-weight="700" font-size="6.5" fill="#fff">T-Money</text></svg>`,
+  peex: `<svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="20" fill="#0073bb"/><text x="20" y="24" text-anchor="middle" font-family="Arial,sans-serif" font-weight="900" font-size="9" fill="#fff">peex</text></svg>`,
   card: `<svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="8" fill="#1a1f71"/><rect x="4" y="14" width="32" height="5" fill="#f7b731"/><rect x="4" y="24" width="14" height="4" rx="1" fill="#fff" opacity="0.8"/></svg>`,
 }
 
 const OP_CARD = { id: 'stripe', logo: logos.card, label: 'Carte bancaire', sub: 'Visa, Mastercard', type: 'card' }
+const OP_PEEX = { id: 'peex', logo: logos.peex, label: 'Mobile Money (Peex)', sub: 'MTN, Orange, Airtel…', type: 'mobile' }
 
 const countries = [
   // Afrique centrale
-  { code: 'cg', name: 'Congo (Brazzaville)', dial: '+242', phonePlaceholder: '06 XXX XX XX',
-    operators: [
-      { id: 'mtn_momo',     logo: logos.mtn,    label: 'MTN Mobile Money', sub: 'Paiement mobile MTN',    type: 'mobile' },
-      { id: 'airtel_money', logo: logos.airtel,  label: 'Airtel Money',     sub: 'Paiement mobile Airtel', type: 'mobile' },
-      OP_CARD ] },
-  { code: 'cd', name: 'Congo (RDC)', dial: '+243', phonePlaceholder: '08X XXX XXXX',
-    operators: [
-      { id: 'mpesa_cd',  logo: logos.mpesa,  label: 'M-Pesa (Vodacom)', sub: 'Paiement mobile M-Pesa',  type: 'mobile' },
-      { id: 'airtel_cd', logo: logos.airtel, label: 'Airtel Money',     sub: 'Paiement mobile Airtel',  type: 'mobile' },
-      { id: 'orange_cd', logo: logos.orange, label: 'Orange Money',     sub: 'Paiement mobile Orange',  type: 'mobile' },
-      OP_CARD ] },
-  { code: 'cm', name: 'Cameroun', dial: '+237', phonePlaceholder: '6XX XXX XXX',
-    operators: [
-      { id: 'mtn_cm',    logo: logos.mtn,    label: 'MTN Mobile Money', sub: 'Paiement mobile MTN',    type: 'mobile' },
-      { id: 'orange_cm', logo: logos.orange, label: 'Orange Money',     sub: 'Paiement mobile Orange', type: 'mobile' },
-      OP_CARD ] },
-  { code: 'ga', name: 'Gabon', dial: '+241', phonePlaceholder: '07 XX XX XX',
-    operators: [
-      { id: 'airtel_ga', logo: logos.airtel, label: 'Airtel Money', sub: 'Paiement mobile Airtel', type: 'mobile' },
-      { id: 'moov_ga',   logo: logos.moov,   label: 'Moov Money',   sub: 'Paiement mobile Moov',   type: 'mobile' },
-      OP_CARD ] },
-  { code: 'cf', name: 'Centrafrique', dial: '+236', phonePlaceholder: '7X XX XX XX',
-    operators: [
-      { id: 'orange_cf', logo: logos.orange, label: 'Orange Money', sub: 'Paiement mobile Orange', type: 'mobile' },
-      { id: 'airtel_cf', logo: logos.airtel, label: 'Airtel Money', sub: 'Paiement mobile Airtel', type: 'mobile' },
-      OP_CARD ] },
-  { code: 'td', name: 'Tchad', dial: '+235', phonePlaceholder: '6X XX XX XX',
-    operators: [
-      { id: 'airtel_td', logo: logos.airtel, label: 'Airtel Money', sub: 'Paiement mobile Airtel', type: 'mobile' },
-      { id: 'moov_td',   logo: logos.moov,   label: 'Moov Money',   sub: 'Paiement mobile Moov',   type: 'mobile' },
-      OP_CARD ] },
+  { code: 'cg', name: 'Congo (Brazzaville)', dial: '+242', phonePlaceholder: '06 XXX XX XX', operators: [OP_PEEX, OP_CARD] },
+  { code: 'cd', name: 'Congo (RDC)', dial: '+243', phonePlaceholder: '08X XXX XXXX', operators: [OP_PEEX, OP_CARD] },
+  { code: 'cm', name: 'Cameroun', dial: '+237', phonePlaceholder: '6XX XXX XXX', operators: [OP_PEEX, OP_CARD] },
+  { code: 'ga', name: 'Gabon', dial: '+241', phonePlaceholder: '07 XX XX XX', operators: [OP_PEEX, OP_CARD] },
+  { code: 'cf', name: 'Centrafrique', dial: '+236', phonePlaceholder: '7X XX XX XX', operators: [OP_PEEX, OP_CARD] },
+  { code: 'td', name: 'Tchad', dial: '+235', phonePlaceholder: '6X XX XX XX', operators: [OP_PEEX, OP_CARD] },
   // Afrique de l'ouest francophone
-  { code: 'ci', name: "Côte d'Ivoire", dial: '+225', phonePlaceholder: '07 XX XX XX XX',
-    operators: [
-      { id: 'mtn_ci',    logo: logos.mtn,    label: 'MTN Mobile Money', sub: 'Paiement mobile MTN',    type: 'mobile' },
-      { id: 'orange_ci', logo: logos.orange, label: 'Orange Money',     sub: 'Paiement mobile Orange', type: 'mobile' },
-      { id: 'wave_ci',   logo: logos.wave,   label: 'Wave',             sub: 'Transfert rapide Wave',  type: 'mobile' },
-      { id: 'moov_ci',   logo: logos.moov,   label: 'Moov Money',       sub: 'Paiement mobile Moov',   type: 'mobile' },
-      OP_CARD ] },
-  { code: 'sn', name: 'Sénégal', dial: '+221', phonePlaceholder: '7X XXX XX XX',
-    operators: [
-      { id: 'orange_sn', logo: logos.orange, label: 'Orange Money', sub: 'Paiement mobile Orange', type: 'mobile' },
-      { id: 'wave_sn',   logo: logos.wave,   label: 'Wave',         sub: 'Transfert rapide Wave',  type: 'mobile' },
-      { id: 'free_sn',   logo: logos.free,   label: 'Free Money',   sub: 'Paiement mobile Free',   type: 'mobile' },
-      OP_CARD ] },
-  { code: 'ml', name: 'Mali', dial: '+223', phonePlaceholder: '7X XX XX XX',
-    operators: [
-      { id: 'orange_ml', logo: logos.orange, label: 'Orange Money', sub: 'Paiement mobile Orange', type: 'mobile' },
-      { id: 'moov_ml',   logo: logos.moov,   label: 'Moov Money',   sub: 'Paiement mobile Moov',   type: 'mobile' },
-      { id: 'wave_ml',   logo: logos.wave,   label: 'Wave',         sub: 'Transfert rapide Wave',  type: 'mobile' },
-      OP_CARD ] },
-  { code: 'bf', name: 'Burkina Faso', dial: '+226', phonePlaceholder: '7X XX XX XX',
-    operators: [
-      { id: 'orange_bf', logo: logos.orange, label: 'Orange Money', sub: 'Paiement mobile Orange', type: 'mobile' },
-      { id: 'moov_bf',   logo: logos.moov,   label: 'Moov Money',   sub: 'Paiement mobile Moov',   type: 'mobile' },
-      OP_CARD ] },
-  { code: 'gn', name: 'Guinée', dial: '+224', phonePlaceholder: '6XX XXX XXX',
-    operators: [
-      { id: 'orange_gn', logo: logos.orange, label: 'Orange Money',     sub: 'Paiement mobile Orange', type: 'mobile' },
-      { id: 'mtn_gn',    logo: logos.mtn,    label: 'MTN Mobile Money', sub: 'Paiement mobile MTN',    type: 'mobile' },
-      OP_CARD ] },
-  { code: 'ne', name: 'Niger', dial: '+227', phonePlaceholder: '9X XX XX XX',
-    operators: [
-      { id: 'airtel_ne', logo: logos.airtel, label: 'Airtel Money', sub: 'Paiement mobile Airtel', type: 'mobile' },
-      { id: 'moov_ne',   logo: logos.moov,   label: 'Moov Money',   sub: 'Paiement mobile Moov',   type: 'mobile' },
-      OP_CARD ] },
-  { code: 'bj', name: 'Bénin', dial: '+229', phonePlaceholder: '9X XX XX XX',
-    operators: [
-      { id: 'mtn_bj',  logo: logos.mtn,  label: 'MTN Mobile Money', sub: 'Paiement mobile MTN',  type: 'mobile' },
-      { id: 'moov_bj', logo: logos.moov, label: 'Moov Money',       sub: 'Paiement mobile Moov', type: 'mobile' },
-      OP_CARD ] },
-  { code: 'tg', name: 'Togo', dial: '+228', phonePlaceholder: '9X XX XX XX',
-    operators: [
-      { id: 'tmoney_tg', logo: logos.tmoney, label: 'T-Money (Togocom)', sub: 'Paiement mobile T-Money', type: 'mobile' },
-      { id: 'moov_tg',   logo: logos.moov,   label: 'Flooz (Moov)',      sub: 'Paiement mobile Flooz',   type: 'mobile' },
-      OP_CARD ] },
+  { code: 'ci', name: "Côte d'Ivoire", dial: '+225', phonePlaceholder: '07 XX XX XX XX', operators: [OP_PEEX, OP_CARD] },
+  { code: 'sn', name: 'Sénégal', dial: '+221', phonePlaceholder: '7X XXX XX XX', operators: [OP_PEEX, OP_CARD] },
+  { code: 'ml', name: 'Mali', dial: '+223', phonePlaceholder: '7X XX XX XX', operators: [OP_PEEX, OP_CARD] },
+  { code: 'bf', name: 'Burkina Faso', dial: '+226', phonePlaceholder: '7X XX XX XX', operators: [OP_PEEX, OP_CARD] },
+  { code: 'gn', name: 'Guinée', dial: '+224', phonePlaceholder: '6XX XXX XXX', operators: [OP_PEEX, OP_CARD] },
+  { code: 'ne', name: 'Niger', dial: '+227', phonePlaceholder: '9X XX XX XX', operators: [OP_PEEX, OP_CARD] },
+  { code: 'bj', name: 'Bénin', dial: '+229', phonePlaceholder: '9X XX XX XX', operators: [OP_PEEX, OP_CARD] },
+  { code: 'tg', name: 'Togo', dial: '+228', phonePlaceholder: '9X XX XX XX', operators: [OP_PEEX, OP_CARD] },
   // Afrique de l'est
-  { code: 'ke', name: 'Kenya', dial: '+254', phonePlaceholder: '07X XXX XXXX',
-    operators: [
-      { id: 'mpesa_ke',  logo: logos.mpesa,  label: 'M-Pesa (Safaricom)', sub: 'Mobile money leader',     type: 'mobile' },
-      { id: 'airtel_ke', logo: logos.airtel, label: 'Airtel Money',        sub: 'Paiement mobile Airtel', type: 'mobile' },
-      OP_CARD ] },
-  { code: 'rw', name: 'Rwanda', dial: '+250', phonePlaceholder: '07X XXX XXX',
-    operators: [
-      { id: 'mtn_rw',    logo: logos.mtn,    label: 'MTN Mobile Money', sub: 'Paiement mobile MTN',    type: 'mobile' },
-      { id: 'airtel_rw', logo: logos.airtel, label: 'Airtel Money',     sub: 'Paiement mobile Airtel', type: 'mobile' },
-      OP_CARD ] },
-  { code: 'tz', name: 'Tanzanie', dial: '+255', phonePlaceholder: '07X XXX XXXX',
-    operators: [
-      { id: 'mpesa_tz',  logo: logos.mpesa,  label: 'M-Pesa (Vodacom)', sub: 'Paiement mobile M-Pesa',  type: 'mobile' },
-      { id: 'airtel_tz', logo: logos.airtel, label: 'Airtel Money',     sub: 'Paiement mobile Airtel',  type: 'mobile' },
-      OP_CARD ] },
-  { code: 'mg', name: 'Madagascar', dial: '+261', phonePlaceholder: '03X XX XXX XX',
-    operators: [
-      { id: 'mvola_mg',  logo: logos.orange, label: 'MVola (Telma)',   sub: 'Paiement mobile MVola',  type: 'mobile' },
-      { id: 'airtel_mg', logo: logos.airtel, label: 'Airtel Money',    sub: 'Paiement mobile Airtel', type: 'mobile' },
-      { id: 'orange_mg', logo: logos.orange, label: 'Orange Money',    sub: 'Paiement mobile Orange', type: 'mobile' },
-      OP_CARD ] },
+  { code: 'ke', name: 'Kenya', dial: '+254', phonePlaceholder: '07X XXX XXXX', operators: [OP_PEEX, OP_CARD] },
+  { code: 'rw', name: 'Rwanda', dial: '+250', phonePlaceholder: '07X XXX XXX', operators: [OP_PEEX, OP_CARD] },
+  { code: 'tz', name: 'Tanzanie', dial: '+255', phonePlaceholder: '07X XXX XXXX', operators: [OP_PEEX, OP_CARD] },
+  { code: 'mg', name: 'Madagascar', dial: '+261', phonePlaceholder: '03X XX XXX XX', operators: [OP_PEEX, OP_CARD] },
   // Afrique de l'ouest anglophone
-  { code: 'ng', name: 'Nigeria', dial: '+234', phonePlaceholder: '080 XXXX XXXX',
-    operators: [
-      { id: 'mtn_ng',    logo: logos.mtn,    label: 'MTN Mobile Money', sub: 'Paiement mobile MTN',    type: 'mobile' },
-      { id: 'airtel_ng', logo: logos.airtel, label: 'Airtel Money',     sub: 'Paiement mobile Airtel', type: 'mobile' },
-      OP_CARD ] },
-  { code: 'gh', name: 'Ghana', dial: '+233', phonePlaceholder: '024 XXX XXXX',
-    operators: [
-      { id: 'mtn_gh',     logo: logos.mtn,     label: 'MTN Mobile Money', sub: 'Paiement mobile MTN',        type: 'mobile' },
-      { id: 'vodacom_gh', logo: logos.vodacom, label: 'Vodafone Cash',    sub: 'Paiement mobile Vodafone',   type: 'mobile' },
-      { id: 'airtel_gh',  logo: logos.airtel,  label: 'AirtelTigo Money', sub: 'Paiement mobile AirtelTigo', type: 'mobile' },
-      OP_CARD ] },
+  { code: 'ng', name: 'Nigeria', dial: '+234', phonePlaceholder: '080 XXXX XXXX', operators: [OP_PEEX, OP_CARD] },
+  { code: 'gh', name: 'Ghana', dial: '+233', phonePlaceholder: '024 XXX XXXX', operators: [OP_PEEX, OP_CARD] },
 ]
 
 const selectedCountry = ref(countries[0])
@@ -349,6 +255,7 @@ async function pay() {
       book_id: book.value.id,
       payment_method: payment.value.method,
       phone: fullPhone,
+      country: selectedCountry.value.code.toUpperCase(),
     })
     router.push({ name: 'library' })
   } catch (e) {
