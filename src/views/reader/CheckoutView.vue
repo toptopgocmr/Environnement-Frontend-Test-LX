@@ -477,13 +477,14 @@ async function pay() {
   }
 
   try {
-    // Format E.164 exigé par Peex (ex: "+237675287689", sans le "0" de tronc
-    // local ni espaces/tirets). Sans ce nettoyage, un numéro saisi "067621919"
-    // devient "+242067621919" (invalide) : la demande n'atteint jamais
-    // vraiment le portefeuille du client, qui ne reçoit donc aucune
-    // notification, et Peex renvoie un échec quasi immédiat.
+    // On envoie le numéro tel que saisi (juste débarrassé des espaces/tirets),
+    // sans supposer qu'un "0" en tête soit un préfixe de tronc à retirer :
+    // Peex valide une longueur précise par pays (ex: 9 chiffres pour le Congo,
+    // "0" inclus — confirmé par leur propre message d'erreur "Congo phone
+    // number must have 9 digits!" quand on le retirait). Les placeholders par
+    // pays reflètent déjà le format local attendu par Peex.
     const fullPhone = isMobileMoney.value
-      ? selectedCountry.value.dial + phoneLocal.value.replace(/\D/g, '').replace(/^0+/, '')
+      ? selectedCountry.value.dial + phoneLocal.value.replace(/\D/g, '')
       : ''
     const { data } = await orderService.initiate({
       book_id: book.value.id,
