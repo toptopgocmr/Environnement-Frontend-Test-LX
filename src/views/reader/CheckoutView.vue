@@ -88,16 +88,16 @@
                     class="flex items-center gap-3 p-3 border rounded transition"
                     :class="[
                       payment.method === op.id ? 'border-[#0073bb] bg-[#e8f5fd]' : 'border-[#d5dbdb] hover:border-[#aab7b8]',
-                      (op.type === 'mobile' && !selectedCountry.peexActive) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                      (op.type === 'mobile' && !isPeexActive(selectedCountry)) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
                     ]">
                     <input type="radio" :value="op.id" v-model="payment.method" class="accent-[#0073bb]"
-                      :disabled="op.type === 'mobile' && !selectedCountry.peexActive"/>
+                      :disabled="op.type === 'mobile' && !isPeexActive(selectedCountry)"/>
                     <span v-html="op.logo" class="flex-shrink-0 w-8 h-8 overflow-hidden rounded"></span>
                     <div>
                       <p class="text-sm font-semibold text-[#16191f]">{{ op.label }}</p>
                       <p class="text-xs text-[#545b64]">
                         {{ op.sub }}
-                        <span v-if="op.type === 'mobile' && !selectedCountry.peexActive" class="text-[#aab7b8]">— bientôt disponible</span>
+                        <span v-if="op.type === 'mobile' && !isPeexActive(selectedCountry)" class="text-[#aab7b8]">— bientôt disponible</span>
                       </p>
                     </div>
                   </label>
@@ -182,118 +182,120 @@ const OP_CARD = { id: 'stripe', logo: logos.card, label: 'Carte bancaire', sub: 
 
 // Chaque opérateur reste affiché tel quel (logo/nom reconnus par le client) mais,
 // techniquement, TOUTE collecte mobile money passe par Peex (payment_method='peex')
-// — voir paymentMethodToSend(). `peexActive` indique si Peex couvre ce pays.
+// — voir paymentMethodToSend(). La liste des pays où Peex est actif vient de
+// l'API (/payments/peex-countries, piloté par PEEX_COLLECT_COUNTRIES côté
+// backend) — voir activePeexCodes / isPeexActive() plus bas.
 function op(id, logoKey, label, sub) {
   return { id, logo: logos[logoKey], label, sub, type: 'mobile' }
 }
 
 const countries = [
   // Afrique centrale
-  { code: 'cg', name: 'Congo (Brazzaville)', dial: '+242', phonePlaceholder: '06 XXX XX XX', peexActive: true,
+  { code: 'cg', name: 'Congo (Brazzaville)', dial: '+242', phonePlaceholder: '06 XXX XX XX',
     operators: [
       op('mtn_momo', 'mtn', 'MTN Mobile Money', 'Paiement mobile MTN'),
       op('airtel_money', 'airtel', 'Airtel Money', 'Paiement mobile Airtel'),
       OP_CARD ] },
-  { code: 'cm', name: 'Cameroun', dial: '+237', phonePlaceholder: '6XX XXX XXX', peexActive: true,
+  { code: 'cm', name: 'Cameroun', dial: '+237', phonePlaceholder: '6XX XXX XXX',
     operators: [
       op('mtn_cm', 'mtn', 'MTN Mobile Money', 'Paiement mobile MTN'),
       op('orange_cm', 'orange', 'Orange Money', 'Paiement mobile Orange'),
       OP_CARD ] },
-  { code: 'cd', name: 'Congo (RDC)', dial: '+243', phonePlaceholder: '08X XXX XXXX', peexActive: false,
+  { code: 'cd', name: 'Congo (RDC)', dial: '+243', phonePlaceholder: '08X XXX XXXX',
     operators: [
       op('mpesa_cd', 'mpesa', 'M-Pesa (Vodacom)', 'Paiement mobile M-Pesa'),
       op('airtel_cd', 'airtel', 'Airtel Money', 'Paiement mobile Airtel'),
       op('orange_cd', 'orange', 'Orange Money', 'Paiement mobile Orange'),
       OP_CARD ] },
-  { code: 'ga', name: 'Gabon', dial: '+241', phonePlaceholder: '07 XX XX XX', peexActive: false,
+  { code: 'ga', name: 'Gabon', dial: '+241', phonePlaceholder: '07 XX XX XX',
     operators: [
       op('airtel_ga', 'airtel', 'Airtel Money', 'Paiement mobile Airtel'),
       op('moov_ga', 'moov', 'Moov Money', 'Paiement mobile Moov'),
       OP_CARD ] },
-  { code: 'cf', name: 'Centrafrique', dial: '+236', phonePlaceholder: '7X XX XX XX', peexActive: false,
+  { code: 'cf', name: 'Centrafrique', dial: '+236', phonePlaceholder: '7X XX XX XX',
     operators: [
       op('orange_cf', 'orange', 'Orange Money', 'Paiement mobile Orange'),
       op('airtel_cf', 'airtel', 'Airtel Money', 'Paiement mobile Airtel'),
       OP_CARD ] },
-  { code: 'td', name: 'Tchad', dial: '+235', phonePlaceholder: '6X XX XX XX', peexActive: false,
+  { code: 'td', name: 'Tchad', dial: '+235', phonePlaceholder: '6X XX XX XX',
     operators: [
       op('airtel_td', 'airtel', 'Airtel Money', 'Paiement mobile Airtel'),
       op('moov_td', 'moov', 'Moov Money', 'Paiement mobile Moov'),
       OP_CARD ] },
   // Afrique de l'ouest francophone
-  { code: 'ci', name: "Côte d'Ivoire", dial: '+225', phonePlaceholder: '07 XX XX XX XX', peexActive: false,
+  { code: 'ci', name: "Côte d'Ivoire", dial: '+225', phonePlaceholder: '07 XX XX XX XX',
     operators: [
       op('mtn_ci', 'mtn', 'MTN Mobile Money', 'Paiement mobile MTN'),
       op('orange_ci', 'orange', 'Orange Money', 'Paiement mobile Orange'),
       op('wave_ci', 'wave', 'Wave', 'Transfert rapide Wave'),
       op('moov_ci', 'moov', 'Moov Money', 'Paiement mobile Moov'),
       OP_CARD ] },
-  { code: 'sn', name: 'Sénégal', dial: '+221', phonePlaceholder: '7X XXX XX XX', peexActive: false,
+  { code: 'sn', name: 'Sénégal', dial: '+221', phonePlaceholder: '7X XXX XX XX',
     operators: [
       op('orange_sn', 'orange', 'Orange Money', 'Paiement mobile Orange'),
       op('wave_sn', 'wave', 'Wave', 'Transfert rapide Wave'),
       op('free_sn', 'free', 'Free Money', 'Paiement mobile Free'),
       OP_CARD ] },
-  { code: 'ml', name: 'Mali', dial: '+223', phonePlaceholder: '7X XX XX XX', peexActive: false,
+  { code: 'ml', name: 'Mali', dial: '+223', phonePlaceholder: '7X XX XX XX',
     operators: [
       op('orange_ml', 'orange', 'Orange Money', 'Paiement mobile Orange'),
       op('moov_ml', 'moov', 'Moov Money', 'Paiement mobile Moov'),
       op('wave_ml', 'wave', 'Wave', 'Transfert rapide Wave'),
       OP_CARD ] },
-  { code: 'bf', name: 'Burkina Faso', dial: '+226', phonePlaceholder: '7X XX XX XX', peexActive: false,
+  { code: 'bf', name: 'Burkina Faso', dial: '+226', phonePlaceholder: '7X XX XX XX',
     operators: [
       op('orange_bf', 'orange', 'Orange Money', 'Paiement mobile Orange'),
       op('moov_bf', 'moov', 'Moov Money', 'Paiement mobile Moov'),
       OP_CARD ] },
-  { code: 'gn', name: 'Guinée', dial: '+224', phonePlaceholder: '6XX XXX XXX', peexActive: false,
+  { code: 'gn', name: 'Guinée', dial: '+224', phonePlaceholder: '6XX XXX XXX',
     operators: [
       op('orange_gn', 'orange', 'Orange Money', 'Paiement mobile Orange'),
       op('mtn_gn', 'mtn', 'MTN Mobile Money', 'Paiement mobile MTN'),
       OP_CARD ] },
-  { code: 'ne', name: 'Niger', dial: '+227', phonePlaceholder: '9X XX XX XX', peexActive: false,
+  { code: 'ne', name: 'Niger', dial: '+227', phonePlaceholder: '9X XX XX XX',
     operators: [
       op('airtel_ne', 'airtel', 'Airtel Money', 'Paiement mobile Airtel'),
       op('moov_ne', 'moov', 'Moov Money', 'Paiement mobile Moov'),
       OP_CARD ] },
-  { code: 'bj', name: 'Bénin', dial: '+229', phonePlaceholder: '9X XX XX XX', peexActive: false,
+  { code: 'bj', name: 'Bénin', dial: '+229', phonePlaceholder: '9X XX XX XX',
     operators: [
       op('mtn_bj', 'mtn', 'MTN Mobile Money', 'Paiement mobile MTN'),
       op('moov_bj', 'moov', 'Moov Money', 'Paiement mobile Moov'),
       OP_CARD ] },
-  { code: 'tg', name: 'Togo', dial: '+228', phonePlaceholder: '9X XX XX XX', peexActive: false,
+  { code: 'tg', name: 'Togo', dial: '+228', phonePlaceholder: '9X XX XX XX',
     operators: [
       op('tmoney_tg', 'tmoney', 'T-Money (Togocom)', 'Paiement mobile T-Money'),
       op('moov_tg', 'moov', 'Flooz (Moov)', 'Paiement mobile Flooz'),
       OP_CARD ] },
   // Afrique de l'est
-  { code: 'ke', name: 'Kenya', dial: '+254', phonePlaceholder: '07X XXX XXXX', peexActive: false,
+  { code: 'ke', name: 'Kenya', dial: '+254', phonePlaceholder: '07X XXX XXXX',
     operators: [
       op('mpesa_ke', 'mpesa', 'M-Pesa (Safaricom)', 'Mobile money leader'),
       op('airtel_ke', 'airtel', 'Airtel Money', 'Paiement mobile Airtel'),
       OP_CARD ] },
-  { code: 'rw', name: 'Rwanda', dial: '+250', phonePlaceholder: '07X XXX XXX', peexActive: false,
+  { code: 'rw', name: 'Rwanda', dial: '+250', phonePlaceholder: '07X XXX XXX',
     operators: [
       op('mtn_rw', 'mtn', 'MTN Mobile Money', 'Paiement mobile MTN'),
       op('airtel_rw', 'airtel', 'Airtel Money', 'Paiement mobile Airtel'),
       OP_CARD ] },
-  { code: 'tz', name: 'Tanzanie', dial: '+255', phonePlaceholder: '07X XXX XXXX', peexActive: false,
+  { code: 'tz', name: 'Tanzanie', dial: '+255', phonePlaceholder: '07X XXX XXXX',
     operators: [
       op('mpesa_tz', 'mpesa', 'M-Pesa (Vodacom)', 'Paiement mobile M-Pesa'),
       op('airtel_tz', 'airtel', 'Airtel Money', 'Paiement mobile Airtel'),
       OP_CARD ] },
-  { code: 'mg', name: 'Madagascar', dial: '+261', phonePlaceholder: '03X XX XXX XX', peexActive: false,
+  { code: 'mg', name: 'Madagascar', dial: '+261', phonePlaceholder: '03X XX XXX XX',
     operators: [
       op('mvola_mg', 'orange', 'MVola (Telma)', 'Paiement mobile MVola'),
       op('airtel_mg', 'airtel', 'Airtel Money', 'Paiement mobile Airtel'),
       op('orange_mg', 'orange', 'Orange Money', 'Paiement mobile Orange'),
       OP_CARD ] },
   // Afrique de l'ouest anglophone
-  { code: 'ng', name: 'Nigeria', dial: '+234', phonePlaceholder: '080 XXXX XXXX', peexActive: false,
+  { code: 'ng', name: 'Nigeria', dial: '+234', phonePlaceholder: '080 XXXX XXXX',
     operators: [
       op('mtn_ng', 'mtn', 'MTN Mobile Money', 'Paiement mobile MTN'),
       op('airtel_ng', 'airtel', 'Airtel Money', 'Paiement mobile Airtel'),
       OP_CARD ] },
-  { code: 'gh', name: 'Ghana', dial: '+233', phonePlaceholder: '024 XXX XXXX', peexActive: false,
+  { code: 'gh', name: 'Ghana', dial: '+233', phonePlaceholder: '024 XXX XXXX',
     operators: [
       op('mtn_gh', 'mtn', 'MTN Mobile Money', 'Paiement mobile MTN'),
       op('vodacom_gh', 'vodacom', 'Vodafone Cash', 'Paiement mobile Vodafone'),
@@ -309,10 +311,16 @@ const filteredCountries = computed(() => {
   return countries.filter(c => c.name.toLowerCase().includes(q) || c.dial.includes(q))
 })
 
+// Pays où Peex collecte réellement (fallback CG/CM en attendant/à défaut de l'API).
+const activePeexCodes = ref(new Set(['cg', 'cm']))
+function isPeexActive(c) {
+  return activePeexCodes.value.has(c.code)
+}
+
 // Choisit le premier opérateur réellement sélectionnable : mobile money si
 // Peex couvre le pays, sinon directement la carte bancaire.
 function defaultMethodFor(c) {
-  if (c.peexActive) {
+  if (isPeexActive(c)) {
     return c.operators.find(o => o.type === 'mobile')?.id ?? c.operators[0]?.id ?? ''
   }
   return c.operators.find(o => o.type === 'card')?.id ?? c.operators[0]?.id ?? ''
@@ -366,6 +374,17 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+
+  // Récupère la liste des pays actifs Peex (pilotée par PEEX_COLLECT_COUNTRIES
+  // côté backend, sans redeploy). Garde le fallback CG/CM si l'appel échoue.
+  try {
+    const { data } = await orderService.peexCountries()
+    const codes = (data?.data?.countries || []).map(c => c.toLowerCase())
+    if (codes.length) activePeexCodes.value = new Set(codes)
+  } catch (e) {
+    console.error('[Checkout] Erreur chargement pays Peex:', e)
+  }
+
   payment.value.method = defaultMethodFor(selectedCountry.value)
 })
 
