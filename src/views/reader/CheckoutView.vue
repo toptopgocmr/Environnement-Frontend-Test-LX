@@ -394,15 +394,26 @@ async function pay() {
     const fullPhone = isMobileMoney.value
       ? selectedCountry.value.dial + phoneLocal.value.replace(/\s/g, '')
       : ''
-    await orderService.initiate({
+    const { data } = await orderService.initiate({
       book_id: book.value.id,
       payment_method: paymentMethodToSend.value,
       phone: fullPhone,
       country: selectedCountry.value.code.toUpperCase(),
     })
-    router.push({ name: 'library' })
+
+    if (paymentMethodToSend.value === 'peex') {
+      // Mobile money : la demande est envoyée, le paiement doit encore être
+      // confirmé par le client sur son téléphone (webhook Peex). On ne le
+      // redirige donc pas vers la bibliothèque tout de suite.
+      alert(data.data?.message || 'Demande envoyée. Validez le paiement sur votre téléphone.')
+      router.push({ name: 'orders' })
+    } else {
+      // Livre gratuit : commande déjà marquée payée côté backend.
+      router.push({ name: 'library' })
+    }
   } catch (e) {
-    alert(e.response?.data?.message || 'Erreur de paiement')
+    const msg = e.response?.data?.data?.message || e.response?.data?.message || 'Erreur de paiement'
+    alert(msg)
   } finally {
     paying.value = false
   }
